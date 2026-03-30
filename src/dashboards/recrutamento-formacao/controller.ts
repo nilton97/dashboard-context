@@ -1,109 +1,51 @@
 import { Request, Response } from 'express';
-import apiGateway from '../../api/gateway.js';
+import {
+  mockKPIs,
+  mockConcursos,
+  mockFormacoes,
+  mockFormacoesPorArea,
+  mockEstatisticasFormacao,
+  mockCandidatosPorConcurso,
+  mockFuncionariosPorKPI,
+} from './mock.js';
 
 export const getKPIs = async (req: Request, res: Response) => {
-  try {
-    const data = await apiGateway.proxy('/api/rh/recrutamento-formacao/kpis');
-    res.json(data);
-  } catch (error: any) {
-    console.error('Error fetching recrutamento/formacao KPIs:', error);
-    res.status(error.status || 500).json({ 
-      error: error.message || 'Erro ao buscar KPIs',
-      backend: error.backend,
-      path: error.path
-    });
-  }
+  res.json(mockKPIs);
 };
 
 export const getConcursos = async (req: Request, res: Response) => {
-  try {
-    const { estado, ano } = req.query;
-    const data = await apiGateway.proxy('/api/rh/recrutamento-formacao/concursos', { estado, ano });
-    res.json(data);
-  } catch (error: any) {
-    console.error('Error fetching concursos:', error);
-    res.status(error.status || 500).json({ 
-      error: error.message || 'Erro ao buscar dados',
-      backend: error.backend,
-      path: error.path
-    });
-  }
+  const { estado } = req.query;
+  const data = estado
+    ? mockConcursos.filter(c => c.estado.toLowerCase() === (estado as string).toLowerCase())
+    : mockConcursos;
+  res.json(data);
 };
 
 export const getFormacoes = async (req: Request, res: Response) => {
-  try {
-    const { estado, ano } = req.query;
-    const data = await apiGateway.proxy('/api/rh/recrutamento-formacao/formacoes', { estado, ano });
-    res.json(data);
-  } catch (error: any) {
-    console.error('Error fetching formações:', error);
-    res.status(error.status || 500).json({ 
-      error: error.message || 'Erro ao buscar dados',
-      backend: error.backend,
-      path: error.path
-    });
-  }
+  const { estado } = req.query;
+  const data = estado
+    ? mockFormacoes.filter(f => f.estado.toLowerCase() === (estado as string).toLowerCase())
+    : mockFormacoes;
+  res.json(data);
 };
 
 export const getCandidatosPorConcurso = async (req: Request, res: Response) => {
-  try {
-    const { concursoId } = req.query;
-    if (!concursoId) {
-      return res.status(400).json({ error: 'concursoId é obrigatório' });
-    }
-    const data = await apiGateway.proxy('/api/rh/recrutamento-formacao/candidatos-concurso', { concursoId });
-    res.json(data);
-  } catch (error: any) {
-    console.error('Error fetching candidatos por concurso:', error);
-    res.status(error.status || 500).json({ 
-      error: error.message || 'Erro ao buscar dados',
-      backend: error.backend,
-      path: error.path
-    });
+  const { concursoId } = req.query;
+  if (!concursoId) {
+    return res.status(400).json({ error: 'concursoId é obrigatório' });
   }
+  const candidatos = mockCandidatosPorConcurso[parseInt(concursoId as string)] || [];
+  res.json(candidatos);
 };
 
 export const getFormacoesPorArea = async (req: Request, res: Response) => {
-  try {
-    const { ano } = req.query;
-    const data = await apiGateway.proxy('/api/rh/recrutamento-formacao/formacoes-area', { ano });
-    res.json(data);
-  } catch (error: any) {
-    console.error('Error fetching formações por área:', error);
-    res.status(error.status || 500).json({ 
-      error: error.message || 'Erro ao buscar dados',
-      backend: error.backend,
-      path: error.path
-    });
-  }
+  res.json(mockFormacoesPorArea);
 };
 
 export const getEstatisticasFormacao = async (req: Request, res: Response) => {
-  try {
-    const { ano } = req.query;
-    const data = await apiGateway.proxy('/api/rh/recrutamento-formacao/estatisticas-formacao', { ano });
-    res.json(data);
-  } catch (error: any) {
-    console.error('Error fetching estatísticas de formação:', error);
-    res.status(error.status || 500).json({ 
-      error: error.message || 'Erro ao buscar dados',
-      backend: error.backend,
-      path: error.path
-    });
-  }
+  res.json(mockEstatisticasFormacao);
 };
 
 export const getFuncionariosPorKPI = async (req: Request, res: Response) => {
-  try {
-    const { tipo, ano } = req.query;
-    // Este endpoint pode não existir no backend ainda
-    res.json([]);
-  } catch (error: any) {
-    console.error('Error fetching funcionários por KPI:', error);
-    res.status(error.status || 500).json({ 
-      error: error.message || 'Erro ao buscar dados',
-      backend: error.backend,
-      path: error.path
-    });
-  }
+  res.json(mockFuncionariosPorKPI);
 };
