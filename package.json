@@ -13,8 +13,7 @@
     "start": "node dist/index.js",
     "start:prod": "NODE_ENV=production node dist/index.js",
     "lint": "eslint src --ext .ts",
-    "install:all": "npm install && cd frontend && npm install",
-    "postinstall": "npm run build:frontend"
+    "install:all": "npm install && cd frontend && npm install"
   },
   "keywords": [
     "dashboard",
