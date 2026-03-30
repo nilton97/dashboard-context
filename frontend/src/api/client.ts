@@ -32,7 +32,7 @@ import type {
   FuncionarioFormado,
 } from '../types/recrutamento-formacao';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
 async function fetchAPI<T>(endpoint: string, params: Record<string, any> = {}): Promise<T> {
   try {
