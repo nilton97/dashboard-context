@@ -24,9 +24,9 @@ export default function OrcamentoTable({ data, loading }: OrcamentoTableProps) {
   }
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-PT', {
+    return new Intl.NumberFormat('pt-CV', {
       style: 'currency',
-      currency: 'EUR',
+      currency: 'CVE',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(value);

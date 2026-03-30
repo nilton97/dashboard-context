@@ -409,7 +409,7 @@ export default function RHDashboard() {
           <div className="animate-slide-up" style={{ animationDelay: '0.9s' }}>
             <KPICard
               title="Custo por Contratação"
-              value={`${kpis?.custoPorContratacao.toLocaleString() || '0'} CVE`}
+              value={kpis ? new Intl.NumberFormat('pt-CV', { style: 'currency', currency: 'CVE', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(kpis.custoPorContratacao) : '0 CVE'}
               icon={<DollarSign className="w-5 h-5" />}
             />
           </div>
