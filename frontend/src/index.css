@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-white min-h-screen font-sans;
+    color: #333333;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-sans;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-white border border-cofre-grayBorder shadow-sm;
+  }
+  
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-md;
+  }
+  
+  .section-title {
+    @apply uppercase font-bold text-white bg-cofre-blueBright px-6 py-4;
+    font-size: 18px;
+    letter-spacing: 0.5px;
+  }
+  
+  .filter-label {
+    @apply text-cofre-gray font-normal mb-2;
+    font-size: 12px;
+  }
+}

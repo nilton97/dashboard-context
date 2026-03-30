@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - RH</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <h1 class="nav-title">Dashboards RH</h1>
+            <ul class="nav-menu">
+                <li><a href="/" class="nav-link">Home</a></li>
+                <li><a href="/avaliacao-desempenho.html" class="nav-link">Avaliação de Desempenho</a></li>
+                <li><a href="/rh.html" class="nav-link active">RH</a></li>
+                <li><a href="/recrutamento-formacao.html" class="nav-link">Recrutamento/Formação</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        <h1 style="margin-bottom: 2rem;">Dashboard - Recursos Humanos</h1>
+        
+        <!-- KPIs -->
+        <div class="kpi-grid" id="kpiContainer">
+            <div class="loading">Carregando KPIs...</div>
+        </div>
+
+        <!-- Gráficos -->
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem;">
+            <div class="chart-container">
+                <h3>Funcionários por Departamento</h3>
+                <canvas id="chartFuncionariosDept"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Distribuição por Gênero</h3>
+                <canvas id="chartGenero"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Faixas Etárias</h3>
+                <canvas id="chartFaixasEtarias"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Detalhes de Antiguidade</h3>
+                <canvas id="chartAntiguidade"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Habilitações Literárias</h3>
+                <canvas id="chartHabilitacoes"></canvas>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Sistema de Dashboards RH</p>
+    </footer>
+
+    <script src="/js/api.js"></script>
+    <script>
+        const rhAPI = window.rhAPI;
+
+        let charts = {};
+
+        async function loadKPIs() {
+            try {
+                const data = await rhAPI.getKPIs();
+                const container = document.getElementById('kpiContainer');
+                container.innerHTML = `
+                    <div class="kpi-card">
+                        <h3>Total Funcionários</h3>
+                        <div class="value">${data.totalFuncionarios || 0}</div>
+                        <div class="variation">${data.variacaoFuncionarios || 0}%</div>
+                    </div>
+                    <div class="kpi-card">
+                        <h3>Total Departamentos</h3>
+                        <div class="value">${data.totalDepartamentos || 0}</div>
+                        <div class="variation">${data.variacaoDepartamentos || 0}%</div>
+                    </div>
+                    <div class="kpi-card">
+                        <h3>Total Equipas</h3>
+                        <div class="value">${data.totalEquipas || 0}</div>
+                        <div class="variation">${data.variacaoEquipas || 0}%</div>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('kpiContainer').innerHTML = 
+                    `<div class="error">Erro ao carregar KPIs: ${error.message}</div>`;
+            }
+        }
+
+        async function loadCharts() {
+            const ano = new Date().getFullYear();
+            
+            try {
+                // Funcionários por Departamento
+                const funcDeptData = await rhAPI.getFuncionariosPorDepartamento(ano);
+                createBarChart('chartFuncionariosDept', funcDeptData, 'departamento', 'quantidade', 'Funcionários por Departamento');
+                
+                // Distribuição por Gênero
+                const generoData = await rhAPI.getDistribuicaoGenero();
+                createPieChart('chartGenero', generoData, 'genero', 'quantidade', 'Distribuição por Gênero');
+                
+                // Faixas Etárias
+                const faixasData = await rhAPI.getFaixasEtarias();
+                createBarChart('chartFaixasEtarias', faixasData, 'faixa', 'quantidade', 'Faixas Etárias');
+                
+                // Antiguidade
+                const antiguidadeData = await rhAPI.getDetalhesAntiguidade(ano);
+                createLineChart('chartAntiguidade', antiguidadeData, 'periodo', 'quantidade', 'Detalhes de Antiguidade');
+                
+                // Habilitações Literárias
+                const habilitacoesData = await rhAPI.getHabilitacoesLiterarias();
+                createPieChart('chartHabilitacoes', habilitacoesData, 'nivel', 'quantidade', 'Habilitações Literárias');
+            } catch (error) {
+                console.error('Erro ao carregar gráficos:', error);
+            }
+        }
+
+        function createBarChart(canvasId, data, labelKey, valueKey, title) {
+            const ctx = document.getElementById(canvasId);
+            if (charts[canvasId]) charts[canvasId].destroy();
+            
+            charts[canvasId] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(item => item[labelKey]),
+                    datasets: [{
+                        label: title,
+                        data: data.map(item => item[valueKey]),
+                        backgroundColor: 'rgba(46, 204, 113, 0.6)',
+                        borderColor: 'rgba(46, 204, 113, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function createPieChart(canvasId, data, labelKey, valueKey, title) {
+            const ctx = document.getElementById(canvasId);
+            if (charts[canvasId]) charts[canvasId].destroy();
+            
+            charts[canvasId] = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: data.map(item => item[labelKey]),
+                    datasets: [{
+                        label: title,
+                        data: data.map(item => item[valueKey]),
+                        backgroundColor: [
+                            'rgba(52, 152, 219, 0.6)',
+                            'rgba(46, 204, 113, 0.6)',
+                            'rgba(241, 196, 15, 0.6)',
+                            'rgba(231, 76, 60, 0.6)',
+                            'rgba(155, 89, 182, 0.6)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        function createLineChart(canvasId, data, labelKey, valueKey, title) {
+            const ctx = document.getElementById(canvasId);
+            if (charts[canvasId]) charts[canvasId].destroy();
+            
+            charts[canvasId] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(item => item[labelKey]),
+                    datasets: [{
+                        label: title,
+                        data: data.map(item => item[valueKey]),
+                        borderColor: 'rgba(155, 89, 182, 1)',
+                        backgroundColor: 'rgba(155, 89, 182, 0.2)',
+                        borderWidth: 2,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        // Inicializar
+        loadKPIs();
+        loadCharts();
+    </script>
+</body>
+</html>

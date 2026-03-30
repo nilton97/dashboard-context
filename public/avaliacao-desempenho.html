@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Avaliação de Desempenho</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <main class="dashboard-main">
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">Avaliação de Desempenho</h1>
+            <p class="dashboard-subtitle">Análise completa do desempenho organizacional</p>
+        </div>
+        
+        <!-- KPIs -->
+        <div class="kpi-grid" id="kpiContainer">
+            <div class="loading">Carregando KPIs...</div>
+        </div>
+
+        <!-- Gráficos -->
+        <div class="charts-grid">
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3>Desempenho por Departamento</h3>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="chartDepartamento"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3>Distribuição de Notas</h3>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="chartDistribuicao"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3>Desempenho por Comarca</h3>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="chartComarca"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3>Top 5 Performers</h3>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="chartTopPerformers"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3>Desempenho por Objetivo</h3>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="chartObjetivo"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3>Radar por Grupo Alvo</h3>
+                </div>
+                <div class="chart-wrapper">
+                    <canvas id="chartRadar"></canvas>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/api.js"></script>
+    <script>
+        const avaliacaoDesempenhoAPI = window.avaliacaoDesempenhoAPI;
+
+        let charts = {};
+
+        async function loadKPIs() {
+            try {
+                const data = await avaliacaoDesempenhoAPI.getKPIs();
+                const container = document.getElementById('kpiContainer');
+                container.innerHTML = `
+                    <div class="kpi-card">
+                        <h3>Total Avaliações</h3>
+                        <div class="value">${data.totalAvaliacoes || 0}</div>
+                        <div class="variation">${data.variacaoTotal || 0}%</div>
+                    </div>
+                    <div class="kpi-card">
+                        <h3>Média Geral</h3>
+                        <div class="value">${data.mediaGeral || 0}</div>
+                        <div class="variation">${data.variacaoMedia || 0}%</div>
+                    </div>
+                    <div class="kpi-card">
+                        <h3>Excelentes (90+)</h3>
+                        <div class="value">${data.excelentes || 0}</div>
+                        <div class="variation">${data.percentualExcelentes || 0}% do total</div>
+                    </div>
+                    <div class="kpi-card">
+                        <h3>Atenção</h3>
+                        <div class="value">${data.atencao || 0}</div>
+                        <div class="variation">${data.percentualAtencao || 0}% requerem acompanhamento</div>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('kpiContainer').innerHTML = 
+                    `<div class="error">Erro ao carregar KPIs: ${error.message}</div>`;
+            }
+        }
+
+        async function loadCharts() {
+            const ano = new Date().getFullYear();
+            
+            try {
+                // Desempenho por Departamento
+                const deptData = await avaliacaoDesempenhoAPI.getDesempenhoPorDepartamento(ano);
+                createBarChart('chartDepartamento', deptData, 'departamento', 'valor', 'Desempenho por Departamento');
+                
+                // Distribuição de Notas
+                const distData = await avaliacaoDesempenhoAPI.getDistribuicaoNotas();
+                createPieChart('chartDistribuicao', distData, 'categoria', 'quantidade', 'Distribuição de Notas');
+                
+                // Desempenho por Comarca
+                const comarcaData = await avaliacaoDesempenhoAPI.getDesempenhoPorComarca(ano);
+                createBarChart('chartComarca', comarcaData, 'comarca', 'valor', 'Desempenho por Comarca');
+                
+                // Top Performers
+                const topData = await avaliacaoDesempenhoAPI.getTopPerformers(5);
+                createBarChart('chartTopPerformers', topData, 'funcionario', 'nota', 'Top 5 Performers');
+                
+                // Desempenho por Objetivo
+                const objData = await avaliacaoDesempenhoAPI.getDesempenhoPorObjetivo(ano);
+                createBarChart('chartObjetivo', objData, 'objetivo', 'valor', 'Desempenho por Objetivo');
+                
+                // Radar
+                const radarData = await avaliacaoDesempenhoAPI.getRadarPorGrupoAlvo(ano);
+                createRadarChart('chartRadar', radarData, 'grupoAlvo', 'valor');
+            } catch (error) {
+                console.error('Erro ao carregar gráficos:', error);
+            }
+        }
+
+        function createBarChart(canvasId, data, labelKey, valueKey, title) {
+            const ctx = document.getElementById(canvasId);
+            if (charts[canvasId]) charts[canvasId].destroy();
+            
+            charts[canvasId] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(item => item[labelKey]),
+                    datasets: [{
+                        label: title,
+                        data: data.map(item => item[valueKey]),
+                        backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0,0,0,0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createPieChart(canvasId, data, labelKey, valueKey, title) {
+            const ctx = document.getElementById(canvasId);
+            if (charts[canvasId]) charts[canvasId].destroy();
+            
+            charts[canvasId] = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: data.map(item => item[labelKey]),
+                    datasets: [{
+                        label: title,
+                        data: data.map(item => item[valueKey]),
+                        backgroundColor: [
+                            'rgba(102, 126, 234, 0.8)',
+                            'rgba(118, 75, 162, 0.8)',
+                            'rgba(251, 191, 36, 0.8)',
+                            'rgba(239, 68, 68, 0.8)',
+                            'rgba(16, 185, 129, 0.8)',
+                            'rgba(59, 130, 246, 0.8)'
+                        ],
+                        borderColor: '#fff',
+                        borderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 15,
+                                usePointStyle: true
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createRadarChart(canvasId, data, labelKey, valueKey) {
+            const ctx = document.getElementById(canvasId);
+            if (charts[canvasId]) charts[canvasId].destroy();
+            
+            charts[canvasId] = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: data.map(item => item[labelKey]),
+                    datasets: [{
+                        label: 'Valor',
+                        data: data.map(item => item[valueKey]),
+                        backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: 'rgba(102, 126, 234, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(102, 126, 234, 1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0,0,0,0.1)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // Inicializar
+        loadKPIs();
+        loadCharts();
+    </script>
+</body>
+</html>

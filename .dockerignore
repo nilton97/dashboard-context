@@ -1,0 +1,14 @@
+node_modules
+dist
+frontend/node_modules
+frontend/dist
+.env
+.env.local
+.env.production
+*.log
+logs
+.DS_Store
+.git
+.gitignore
+README.md
+DEPLOY.md

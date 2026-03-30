@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Recrutamento e Formação</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <h1 class="nav-title">Dashboards RH</h1>
+            <ul class="nav-menu">
+                <li><a href="/" class="nav-link">Home</a></li>
+                <li><a href="/avaliacao-desempenho.html" class="nav-link">Avaliação de Desempenho</a></li>
+                <li><a href="/rh.html" class="nav-link">RH</a></li>
+                <li><a href="/recrutamento-formacao.html" class="nav-link active">Recrutamento/Formação</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="container">
+        <h1 style="margin-bottom: 2rem;">Dashboard - Recrutamento e Formação</h1>
+        
+        <!-- KPIs -->
+        <div class="kpi-grid" id="kpiContainer">
+            <div class="loading">Carregando KPIs...</div>
+        </div>
+
+        <!-- Gráficos -->
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem;">
+            <div class="chart-container">
+                <h3>Formações por Área</h3>
+                <canvas id="chartFormacoesArea"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Estatísticas de Formação</h3>
+                <div id="statsFormacao"></div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Sistema de Dashboards RH</p>
+    </footer>
+
+    <script src="/js/api.js"></script>
+    <script>
+        const recrutamentoFormacaoAPI = window.recrutamentoFormacaoAPI;
+
+        let charts = {};
+
+        async function loadKPIs() {
+            try {
+                const data = await recrutamentoFormacaoAPI.getKPIs();
+                const container = document.getElementById('kpiContainer');
+                container.innerHTML = `
+                    <div class="kpi-card">
+                        <h3>Total Concursos</h3>
+                        <div class="value">${data.totalConcursos || 0}</div>
+                        <div class="variation">${data.variacaoConcursos || 0}%</div>
+                    </div>
+                    <div class="kpi-card">
+                        <h3>Total Candidatos</h3>
+                        <div class="value">${data.totalCandidatos || 0}</div>
+                    </div>
+                    <div class="kpi-card">
+                        <h3>Total Formações</h3>
+                        <div class="value">${data.totalFormacoes || 0}</div>
+                        <div class="variation">${data.variacaoFormacoes || 0}%</div>
+                    </div>
+                    <div class="kpi-card">
+                        <h3>Funcionários Formados</h3>
+                        <div class="value">${data.totalFuncionariosFormados || 0}</div>
+                    </div>
+                    <div class="kpi-card">
+                        <h3>Taxa Sucesso Concursos</h3>
+                        <div class="value">${data.taxaSucessoConcursos || 0}%</div>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('kpiContainer').innerHTML = 
+                    `<div class="error">Erro ao carregar KPIs: ${error.message}</div>`;
+            }
+        }
+
+        async function loadCharts() {
+            const ano = new Date().getFullYear();
+            
+            try {
+                // Formações por Área
+                const formacoesAreaData = await recrutamentoFormacaoAPI.getFormacoesPorArea(ano);
+                createBarChart('chartFormacoesArea', formacoesAreaData, 'area', 'quantidade', 'Formações por Área');
+                
+                // Estatísticas de Formação
+                const statsData = await recrutamentoFormacaoAPI.getEstatisticasFormacao(ano);
+                document.getElementById('statsFormacao').innerHTML = `
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1rem;">
+                        <div>
+                            <strong>Total Formações:</strong> ${statsData.totalFormacoes || 0}
+                        </div>
+                        <div>
+                            <strong>Funcionários Formados:</strong> ${statsData.totalFuncionariosFormados || 0}
+                        </div>
+                        <div>
+                            <strong>Total Horas:</strong> ${statsData.totalHoras || 0}
+                        </div>
+                        <div>
+                            <strong>Média por Funcionário:</strong> ${statsData.mediaFormacoesPorFuncionario || 0}
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Erro ao carregar gráficos:', error);
+            }
+        }
+
+        function createBarChart(canvasId, data, labelKey, valueKey, title) {
+            const ctx = document.getElementById(canvasId);
+            if (charts[canvasId]) charts[canvasId].destroy();
+            
+            charts[canvasId] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.map(item => item[labelKey]),
+                    datasets: [{
+                        label: title,
+                        data: data.map(item => item[valueKey]),
+                        backgroundColor: 'rgba(241, 196, 15, 0.6)',
+                        borderColor: 'rgba(241, 196, 15, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        // Inicializar
+        loadKPIs();
+        loadCharts();
+    </script>
+</body>
+</html>
